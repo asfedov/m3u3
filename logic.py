@@ -22,6 +22,7 @@ class DB_Manager:
                             description TEXT,
                             url TEXT,
                             status_id INTEGER,
+                            photo BLOB,
                             FOREIGN KEY(status_id) REFERENCES status(status_id)
                         )''') 
             conn.execute('''CREATE TABLE IF NOT EXISTS skills (
@@ -31,7 +32,7 @@ class DB_Manager:
             conn.execute('''CREATE TABLE IF NOT EXISTS project_skills (
                             project_id INTEGER,
                             skill_id INTEGER,
-                            FOREIGN KEY(project_id) REFERENCES projects(project_id),
+                            FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
                             FOREIGN KEY(skill_id) REFERENCES skills(skill_id)
                         )''')
             conn.execute('''CREATE TABLE IF NOT EXISTS status (
@@ -43,12 +44,16 @@ class DB_Manager:
     def __executemany(self, sql, data):
         conn = sqlite3.connect(self.database)
         with conn:
+            conn.execute("PRAGMA foreign_keys = ON;")
+
             conn.executemany(sql, data)
             conn.commit()
 
     def __execute_table_change(self, sql):
         conn = sqlite3.connect(self.database)
         with conn:
+            conn.execute("PRAGMA foreign_keys = ON;")
+
             conn.execute(sql)
             conn.commit()
     
@@ -78,6 +83,12 @@ class DB_Manager:
         sql = """INSERT INTO projects 
         (user_id, project_name, url, status_id) 
         values(?, ?, ?, ?)"""
+        self.__executemany(sql, data)
+
+    def full_insert_project(self, data):
+        sql = """INSERT INTO projects 
+            (user_id, project_name, description, url, status_id, photo) 
+            VALUES (?, ?, ?, ?, ?, ?)"""
         self.__executemany(sql, data)
 
 
@@ -161,11 +172,16 @@ if __name__ == '__main__':
     manager = DB_Manager(DATABASE)
     manager.create_tables()
     manager.default_insert()
+    #manager.add_column('projects', 'photo', 'BLOB')
+
+    """
+    
     manager.insert_project([(12345, 'Test Project', 'http://example.com', 1)])
     manager.get_statuses()
     manager.delete_project(12345, 2)
     print(manager.get_projects(12345))
-    #manager.add_column('projects', 'photo', 'BLOB')
+    
 
     manager.insert_photo(1, os.path.join(BASE_DIR, "ammoicon.png"))
+    """
     
